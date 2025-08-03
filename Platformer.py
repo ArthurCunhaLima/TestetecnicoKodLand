@@ -1,3 +1,4 @@
+from turtle import color
 import pgzrun
 import random
 from pygame import Rect
@@ -10,7 +11,7 @@ sound = Actor("mute")
 sound.x = 20
 sound.y = 580
 
-
+song_playing = False
 jumping = False
 vertical_speed = 0
 gravity = 1.25
@@ -31,8 +32,15 @@ main_character = Actor("principal/principal")
 main_character.x = 400
 main_character.y = 550
 
+enemy_one = Actor("enemies/saw")
+enemy_one.x = 50
+enemy_one.y = 340
 
 
+enemy_two = Actor("enemies/mouse")
+enemy_two.x = 610
+enemy_two.y = 182
+enemy_two_direction = -1
 
 platforms = []
 platforms_xy = [
@@ -58,7 +66,7 @@ coin_one = True
 
 coins_xy = [
     (400, 440),
-    (50, 280),
+    (50, 250),
     (550, 140)
 ]
 def coin_generate():
@@ -78,6 +86,11 @@ def coin_flip():
         for coin in coins:
             coin.image = "coin_two"
 
+def check_victory():
+    global state
+    if len(coins) == 0 and state == "game":
+        main_character.image = "principal/victory"
+        state = "victory"
     
 clock.schedule_interval(coin_flip, 0.5)
 
@@ -89,13 +102,18 @@ def on_mouse_down(pos,button):
             sound.image = "mute"
 
 def song_play():
-    if sound.image == "mute":
+    global song_playing 
+    if sound.image == "mute" and not song_playing:
         sounds.song.play()
-        sounds.song.set_volume(0.01)
+        sounds.song.set_volume(0.08)
+        song_playing = True
     elif sound.image == "unmute":
         sounds.song.stop()
+        song_playing = False
     if state == "game" : 
         sounds.song.stop()
+
+
 
 
 def check_platform_colision():
@@ -122,6 +140,7 @@ def check_platform_colision():
                 jumping = False
                 onplatform = True
                 break
+           
 
     if not onplatform and not jumping:
         jumping = True
@@ -136,12 +155,33 @@ def check_coin_colision():
             sounds.coin.play()
             sounds.coin.set_volume(0.3)
 
-def update():
-    global jumping, vertical_speed
-    
-    
-    song_play()
+def check_enemy_colision():
+    global state
+    if main_character.colliderect(enemy_one) or main_character.colliderect(enemy_two):
+        main_character.image = "principal/gameover"
+        state = "gameover"
+        sounds.gameover.play()
 
+def mouse_movement():  
+    global enemy_two_direction
+
+    enemy_two.x += 2 * enemy_two_direction
+
+    if enemy_two.x >= 730:
+        enemy_two_direction = -1
+        enemy_two.image = "enemies/mouse"
+    elif enemy_two.x <= 480:
+        enemy_two_direction = 1
+        enemy_two.image = "enemies/mouse_flipped"
+
+
+
+def update():
+    global jumping, vertical_speed,state
+    
+    if state == "gameover" or state =="victory":
+        return
+    song_play()
     iniciarJogo()
 
 
@@ -179,7 +219,13 @@ def update():
 
     if not jumping:
         main_character.image = "principal/principal"
+
+
+
     check_coin_colision()
+    check_enemy_colision()
+    check_victory()
+    mouse_movement()
 
 def draw():
     screen.clear()
@@ -191,7 +237,6 @@ def draw():
         sound.draw()
 
 
-
     if state == "game":
         main_character.draw()
         for platform in platforms:
@@ -199,7 +244,14 @@ def draw():
         for coin in coins:
             coin.draw()
         screen.draw.text(f"Moedas : {coin_count}", topleft=(20,20), fontsize=40)
-
+        enemy_one.draw()
+        enemy_two.draw()
+    if state == "gameover":
+        screen.draw.text("GAME OVER", center=(WIDTH//2, HEIGHT//2), fontsize=100, color="black")
+        main_character.draw()
+    if state == "victory":
+        screen.draw.text("VICTORY", center=(WIDTH//2, HEIGHT//2), fontsize=100,color="yellow")
+        main_character.draw()
 
 
 pgzrun.go()
