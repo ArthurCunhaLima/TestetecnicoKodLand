@@ -1,4 +1,3 @@
-from turtle import color
 import pgzrun
 import random
 from pygame import Rect
